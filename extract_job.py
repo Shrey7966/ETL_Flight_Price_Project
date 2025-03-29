@@ -37,6 +37,7 @@ headers = {
 }
 
 response = requests.get(url, headers=headers, params=querystring)
+data = response.json()
 
 #Step-2 Store the response in s3 bucket
 
