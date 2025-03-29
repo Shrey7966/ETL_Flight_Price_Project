@@ -3,6 +3,7 @@ import os
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, explode, unix_timestamp, lit, lead
 from functools import reduce
+from pyspark.sql.window import Window
 from pyspark.sql.types import StringType
 
 
