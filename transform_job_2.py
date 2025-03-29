@@ -34,59 +34,86 @@ spark = SparkSession.builder \
 # Configure Spark to access S3
 spark.conf.set("fs.s3a.endpoint", "s3.amazonaws.com")
 
-merged_df = spark.read.json(f"s3a://{S3_BUCKET}/merged-flight-data")
+# Initialize Spark Session
+## spark = SparkSession.builder.appName("FlattenJSON").getOrCreate()
 
-# Step 1: Flatten first-level struct fields
-df_flattened = merged_df.select("fetch_date",
-    explode(col("data.itineraries")).alias("itineraries")  # Exploding arrays
+# Load raw JSON data from S3
+## df_raw = spark.read.option("multiline", "true").json("s3://flightpricedataanalysis/flight_prices/*/*.json")
+
+merged_df_test= spark.read.json("s3://flightpriceanalysisproject/merged-flight-data")
+# Flatten JSON: Extract Itineraries
+df_flattened = merged_df_test.select(
+    col("fetch_date"),
+    explode(col("data.itineraries")).alias("itinerary")
 )
 
-# Step 2: Extract fields from the exploded 'itineraries' struct
-df_itineraries = df_flattened.select("fetch_date",
-    col("itineraries.price.formatted").alias("formattedPrice"),  # Extract price
-    explode(col("itineraries.legs")).alias("legs")  # Exploding legs
+# Extract Price & Legs
+df_itineraries = df_flattened.select(
+    col("fetch_date"),
+    col("itinerary.price.formatted").alias("formattedPrice"),
+    explode(col("itinerary.legs")).alias("legs")
 )
 
-# Step 3: Extract fields from the 'legs' struct
-df_legs = df_itineraries.select("fetch_date",
-    "formattedPrice",  # Keep extracted price fields
+# Extract Flight Segment Details
+df_segments = df_itineraries.select(
+    col("fetch_date"),
+    col("formattedPrice"),
     col("legs.departure").alias("departure"),
     col("legs.arrival").alias("arrival"),
     col("legs.durationInMinutes").alias("duration"),
-    explode(col("legs.segments")).alias("segments")
+    explode(col("legs.segments")).alias("segment")
+).select(
+    col("fetch_date"),
+    col("formattedPrice"),
+    col("departure"),
+    col("arrival"),
+    col("duration"),
+    col("segment.flightNumber").alias("flightNumber"),
+    col("segment.marketingCarrier.name").alias("marketingCarrier"),
+    col("segment.operatingCarrier.name").alias("operatingCarrier"),
+    col("segment.origin.displayCode").alias("origin"),
+    col("segment.destination.displayCode").alias("destination")
 )
 
-# Step 4: Extract fields from the 'segments' struct
-df_segments = df_legs.select("fetch_date",
-    "formattedPrice",  # Keep price details
-    "departure", "arrival", "duration",
-    col("segments.flightNumber").alias("flightNumber"),
-    col("segments.marketingCarrier.name").alias("marketingCarrier"),
-    col("segments.operatingCarrier.name").alias("operatingCarrier"),
-    col("segments.origin.displayCode").alias("originCode"),
-    col("segments.destination.displayCode").alias("destinationCode")
-)
+# Window Spec for Layover Calculation
+window_spec = Window.partitionBy("fetch_date", "flightNumber").orderBy("departure")
 
-# Step 5: Add a column to calculate layover duration (for consecutive legs of the same flight)
-window_spec = Window.partitionBy("flightNumber").orderBy("departure")
-
+# Add Layover Information
 df_with_layover = df_segments.withColumn(
     "next_departure", lead("departure").over(window_spec)
 ).withColumn(
     "next_arrival", lead("arrival").over(window_spec)
-)
-
-# Calculate layover duration in minutes
-df_with_layover = df_with_layover.withColumn(
+).withColumn(
     "layover_duration",
     (unix_timestamp("next_departure") - unix_timestamp("arrival")) / 60
 )
 
-# Step 6: Merge layover rows (rows with the same flightNumber)
-df_final = df_with_layover.groupBy("fetch_date",
-   "flightNumber", "formattedPrice", "departure", "arrival", "duration", "marketingCarrier", 
-    "operatingCarrier", "originCode", "destinationCode"
-).agg(
-    lit(0).alias("layover_duration")  # Add layover duration as 0 for non-layover rows
-).withColumnRenamed("layover_duration", "layover")
+# Group Flights & Calculate Layovers
+df_grouped = df_segments.groupBy("fetch_date", "formattedPrice", "departure") \
+    .agg(
+        first("origin").alias("origin"),
+        last("destination").alias("destination"),
+        collect_list("destination").alias("layovers"),
+        first("duration").alias("duration"),
+        first("marketingCarrier").alias("marketingCarrier"),
+        first("operatingCarrier").alias("operatingCarrier"),
+        first("flightNumber").alias("flightNumber")
+    ).withColumn(
+        "layover",
+        array_except(col("layovers"), array(col("origin"), col("destination")))
+    ).withColumn(
+        "layover", array_join(col("layover"), ", ")
+    ).withColumn(
+        "numStops", when(col("layover") == "", 0).otherwise(size(split(col("layover"), ", ")))
+    )
 
+# Select Final Columns
+df_final = df_grouped.select(
+    "fetch_date", "flightNumber", "formattedPrice", "departure", "duration",
+    "marketingCarrier", "operatingCarrier", "origin", "destination", "layover", "numStops"
+)
+
+# Save Cleaned Data to S3
+df_final.write.mode("overwrite").csv(f"s3://{S3_BUCKET}/flight_prices_toload.csv", header=True)
+
+df_final.show(n=1000, truncate=False)
