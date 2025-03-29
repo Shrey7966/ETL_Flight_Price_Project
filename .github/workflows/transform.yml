@@ -1,5 +1,5 @@
 
-name: Flight Price Tranform job - 1
+name: Flight Price Tranform job
 
 on:
   schedule:
