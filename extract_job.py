@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 import json
 
-# Load environment variables
+# STEP -1  Load environment variables
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 S3_BUCKET = os.getenv("S3_BUCKET_NAME")
@@ -17,7 +17,7 @@ fetch_date = datetime.today().strftime('%Y-%m-%d')
 # Depart date (when the flight is scheduled)
 depart_date = "2025-05-31"
 
-#Step-1 Call Flights API 
+#Step-2 Call Flights API 
 url = "https://flights-sky.p.rapidapi.com/flights/search-one-way"
 
 querystring = {"fromEntityId":"BLR",
@@ -39,11 +39,11 @@ headers = {
 response = requests.get(url, headers=headers, params=querystring)
 data = response.json()
 
-#Step-2 Store the response in s3 bucket
+#Step-3 Store the response in s3 bucket
 
 s3_key = f"flight_prices/{fetch_date}/{depart_date}.json" # New path format
     
 s3 = boto3.client("s3")
 s3.put_object(Bucket=S3_BUCKET, Key=s3_key, Body=json.dumps(data))
     
-print(f"Saved data to s3://{s3_bucket}/{s3_key}")
+print(f"Saved data to s3://{S3_BUCKET}/{s3_key}")
