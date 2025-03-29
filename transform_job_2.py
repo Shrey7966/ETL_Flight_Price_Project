@@ -34,13 +34,9 @@ spark = SparkSession.builder \
 # Configure Spark to access S3
 spark.conf.set("fs.s3a.endpoint", "s3.amazonaws.com")
 
-# Initialize Spark Session
-## spark = SparkSession.builder.appName("FlattenJSON").getOrCreate()
 
-# Load raw JSON data from S3
-## df_raw = spark.read.option("multiline", "true").json("s3://flightpricedataanalysis/flight_prices/*/*.json")
+merged_df_test= spark.read.json("s3a://{S3_BUCKET}/merged-flight-data")
 
-merged_df_test= spark.read.json("s3://flightpriceanalysisproject/merged-flight-data")
 # Flatten JSON: Extract Itineraries
 df_flattened = merged_df_test.select(
     col("fetch_date"),
@@ -114,6 +110,6 @@ df_final = df_grouped.select(
 )
 
 # Save Cleaned Data to S3
-df_final.write.mode("overwrite").csv(f"s3://{S3_BUCKET}/flight_prices_toload.csv", header=True)
+df_final.write.mode("overwrite").csv(f"s3a://{S3_BUCKET}/flight_prices_toload.csv", header=True)
 
 df_final.show(n=1000, truncate=False)
