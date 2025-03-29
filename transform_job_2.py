@@ -33,7 +33,7 @@ spark = SparkSession.builder \
 # Configure Spark to access S3
 spark.conf.set("fs.s3a.endpoint", "s3.amazonaws.com")
 
-merged_df = spark.read.json("s3://S3_BUCKET/merged-flight-data")
+merged_df = spark.read.json(f"s3a://{S3_BUCKET}/merged-flight-data")
 
 # Step 1: Flatten first-level struct fields
 df_flattened = merged_df.select("fetch_date",
