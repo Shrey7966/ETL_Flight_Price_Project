@@ -20,7 +20,7 @@ jobs:
           python-version: "3.9"
 
       - name: Install dependencies
-        run: pip install requests pandas boto3 pyspark
+        run: pip install requests pandas boto3 pyspark psycopg2-binary
 
       - name: Run load_job
         env:
