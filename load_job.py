@@ -11,6 +11,14 @@ AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 S3_BUCKET = os.getenv("S3_BUCKET_NAME")
 
+spark = SparkSession.builder \
+    .appName("FlightPriceETL") \
+    .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
+    .config("spark.hadoop.fs.s3a.access.key", AWS_ACCESS_KEY) \
+    .config("spark.hadoop.fs.s3a.secret.key", AWS_SECRET_KEY) \
+    .config("spark.jars.packages", "org.apache.hadoop:hadoop-aws:3.3.2,com.amazonaws:aws-java-sdk-bundle:1.11.1026") \
+    .getOrCreate()
+
 df_post = spark.read.csv(f"s3a://{S3_BUCKET}/flight_prices_toload.csv/", header=True, inferSchema=True)
 
 # Connect to PostgreSQL
@@ -44,9 +52,6 @@ cur.execute("""
     INSERT INTO flight_prices (fetch_date, flight_number, origin, destination, price, departure_time, duration, marketingCarrier, operatingCarrier, layover, numStops)
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 """, (fetch_date, flight_number, origin, destination, price, departure_time, duration, marketingCarrier, operatingCarrier, layover, numStops))
-conn.commit()
- 
-
 
 # Commit and close connection
 conn.commit()
