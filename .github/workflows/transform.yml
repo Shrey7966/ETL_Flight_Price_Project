@@ -1,5 +1,5 @@
 
-name: Flight Price Tranform job
+name: Flight Price Tranform job - 1
 
 on:
   schedule:
@@ -27,4 +27,4 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-        run: python extract_job.py
+        run: python transform_job_1.py
