@@ -26,6 +26,7 @@ response = s3.list_objects_v2(Bucket=S3_BUCKET, Prefix=s3_prefix, Delimiter='/')
 
 # Extract available fetch dates
 fetch_dates = [obj['Prefix'].split('/')[-2] for obj in response.get('CommonPrefixes', [])]
+print(fetch_dates)
 
 # Initialize Spark session (if not already initialized in Databricks)
 spark = SparkSession.builder.appName("FlightPriceTransform").getOrCreate()
