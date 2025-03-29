@@ -3,6 +3,7 @@ import pandas as pd
 import boto3
 import os
 from datetime import datetime
+import json
 
 # Load environment variables
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
