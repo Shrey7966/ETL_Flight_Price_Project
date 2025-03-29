@@ -9,12 +9,19 @@ AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 S3_BUCKET = os.getenv("S3_BUCKET_NAME")
 
+
+# Fetch date (when we are collecting data)
+fetch_date = datetime.today().strftime('%Y-%m-%d')
+
+# Depart date (when the flight is scheduled)
+depart_date = "2025-05-31"
+
 #Step-1 Call Flights API 
 url = "https://flights-sky.p.rapidapi.com/flights/search-one-way"
 
 querystring = {"fromEntityId":"BLR",
                "toEntityId":"DFW",
-               "departDate":"2025-05-31",
+               "departDate":depart_date,
                "market":"IN",
                "locale":"en-US",
                "currency":"INR",
