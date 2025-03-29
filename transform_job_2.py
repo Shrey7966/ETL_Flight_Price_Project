@@ -1,7 +1,7 @@
 import boto3
 import os
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, explode, unix_timestamp, lit, lead
+from pyspark.sql.functions import col, explode, unix_timestamp, lead, array_except, array, size, split, when, array_join, first, last, collect_list,lit
 from functools import reduce
 from pyspark.sql.window import Window
 from pyspark.sql.types import StringType
