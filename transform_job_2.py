@@ -35,7 +35,7 @@ spark = SparkSession.builder \
 spark.conf.set("fs.s3a.endpoint", "s3.amazonaws.com")
 
 
-merged_df_test= spark.read.json("s3a://{S3_BUCKET}/merged-flight-data")
+merged_df_test= spark.read.json(f"s3a://{S3_BUCKET}/merged-flight-data")
 
 # Flatten JSON: Extract Itineraries
 df_flattened = merged_df_test.select(
