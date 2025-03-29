@@ -28,8 +28,14 @@ response = s3.list_objects_v2(Bucket=S3_BUCKET, Prefix=s3_prefix, Delimiter='/')
 fetch_dates = [obj['Prefix'].split('/')[-2] for obj in response.get('CommonPrefixes', [])]
 print(fetch_dates)
 
-# Initialize Spark session (if not already initialized in Databricks)
-spark = SparkSession.builder.appName("FlightPriceTransform").getOrCreate()
+# Initialize Spark session with S3 support
+spark = SparkSession.builder \
+    .appName("FlightPriceETL") \
+    .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
+    .config("spark.hadoop.fs.s3a.access.key", AWS_ACCESS_KEY) \
+    .config("spark.hadoop.fs.s3a.secret.key",AWS_SECRET_KEY ) \
+    .config("spark.jars.packages", "org.apache.hadoop:hadoop-aws:3.3.2,com.amazonaws:aws-java-sdk-bundle:1.11.1026") \
+    .getOrCreate()
 
 # Configure Spark to access S3
 spark.conf.set("fs.s3a.endpoint", "s3.amazonaws.com")
