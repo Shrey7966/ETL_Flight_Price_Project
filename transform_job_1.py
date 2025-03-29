@@ -53,6 +53,7 @@ for fetch_date in fetch_dates:
 # Merge all DataFrames if any data was read
 if dfs:
     flight_data = reduce(lambda df1, df2: df1.unionByName(df2, allowMissingColumns=True), dfs)
-    flight_data.show()  # Show sample data
 else:
     print(" No valid data found in S3.")
+
+flight_data.coalesce(1).write.mode("overwrite").json(f"s3a://{S3_BUCKET}/merged-flight-data")
