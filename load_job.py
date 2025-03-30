@@ -20,6 +20,7 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 df_post = spark.read.csv(f"s3a://{S3_BUCKET}/flight_prices_toload.csv/", header=True, inferSchema=True)
+pandas_df = df_post.toPandas()
 
 # Connect to PostgreSQL
 conn = psycopg2.connect(
