@@ -51,11 +51,26 @@ for _, row in pandas_df.iterrows():
         layover = row["layover"]
         numStops = row["numStops"]
 
-        # Execute the INSERT statement for each row
-        cur.execute("""
-            INSERT INTO flight_prices (fetch_date, flight_number, origin, destination, price, departure_time, duration, marketingCarrier, operatingCarrier, layover, numStops)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (fetch_date, flight_number, origin, destination, price, departure_time, duration, marketingCarrier, operatingCarrier, layover, numStops))
+# SQL query to create the table if it doesn't exist
+create_table_query = """
+CREATE TABLE IF NOT EXISTS flight_prices (
+    id SERIAL PRIMARY KEY,
+    fetch_date DATE NOT NULL,
+    flight_number VARCHAR(50) NOT NULL,
+    origin VARCHAR(10) NOT NULL,
+    destination VARCHAR(10) NOT NULL,
+    price INT,
+    departure_time TIMESTAMP NOT NULL,
+    duration INT,
+    marketing_carrier VARCHAR(100),
+    operating_carrier VARCHAR(100),
+    layover VARCHAR(50),
+    num_stops INT
+);
+"""
+
+# Execute the query
+cursor.execute(create_table_query)
 
     except Exception as e:
         print(f" Error inserting row {row}: {e}")
