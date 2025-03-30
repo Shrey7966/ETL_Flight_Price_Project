@@ -32,30 +32,37 @@ conn = psycopg2.connect(
 )
 cur = conn.cursor()
 
+# Function to clean price (convert ₹ 51,898 → 51898)
+def clean_price(price_str):
+    return int(re.sub(r"[^\d]", "", price_str)) if isinstance(price_str, str) else price_str
+
 # Insert data into PostgreSQL table
 for _, row in pandas_df.iterrows():
-    fetch_date = row["fetch_date"]
-    flight_number = row["flightNumber"]
-    origin = row["origin"]
-    destination = row["destination"]
-    price = clean_price(row["formattedPrice"])  # Convert ₹ 51,898 → 51898
-    departure_time = row["departure"]  # Ensure this is in correct datetime format
-    duration = row["duration"]
-    marketingCarrier = row["marketingCarrier"]
-    operatingCarrier = row["operatingCarrier"]
-    layover = row["layover"]
-    numStops = row["numStops"]
-   
-cur.execute("SELECT current_database();")
-print(cur.fetchone())
+    try:
+        fetch_date = row["fetch_date"]
+        flight_number = row["flightNumber"]
+        origin = row["origin"]
+        destination = row["destination"]
+        price = clean_price(row["formattedPrice"])
+        departure_time = row["departure"]
+        duration = row["duration"]
+        marketingCarrier = row["marketingCarrier"]
+        operatingCarrier = row["operatingCarrier"]
+        layover = row["layover"]
+        numStops = row["numStops"]
 
-cur.execute("""
-    INSERT INTO flight_prices (fetch_date, flight_number, origin, destination, price, departure_time, duration, marketingCarrier, operatingCarrier, layover, numStops)
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-""", (fetch_date, flight_number, origin, destination, price, departure_time, duration, marketingCarrier, operatingCarrier, layover, numStops))
+        # Execute the INSERT statement for each row
+        cur.execute("""
+            INSERT INTO flight_prices (fetch_date, flight_number, origin, destination, price, departure_time, duration, marketingCarrier, operatingCarrier, layover, numStops)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (fetch_date, flight_number, origin, destination, price, departure_time, duration, marketingCarrier, operatingCarrier, layover, numStops))
+
+    except Exception as e:
+        print(f" Error inserting row {row}: {e}")
 
 # Commit and close connection
 conn.commit()
 cur.close()
 conn.close()
-print("✅ Cleaned flight price data successfully stored in PostgreSQL!")
+
+print("Cleaned flight price data successfully stored in PostgreSQL!")
